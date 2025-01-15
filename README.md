@@ -154,7 +154,7 @@ $$
 - `td_dynamic/karun/estimate_multiple_avi.py`: functions to estimate h and g using approximate value iteration method
 - `td_dynamic/karun/estimate_multiple_objective.py`: functions to evaluate the log-likelihood and estimate parameters by maximizing the log-likelihood
 
-## Manualy test files
+## Manual test files
 
 - First run `reference/karun/simulate_multiple.py` to generate the data
 - `reference/karun/test_simulate_multiple.py`: test functions in `simulate_multiple.py`
