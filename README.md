@@ -141,6 +141,8 @@ G(z_G)
 \end{split}
 $$
 
+The equilibrium is defined as a perfect-Markov equilibrium.
+
 ## Main files
 
 - `reference/karun/simulate_multiple.py`: solve the model and simulate the data from the solution
