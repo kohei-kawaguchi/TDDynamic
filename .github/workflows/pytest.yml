@@ -1,0 +1,260 @@
+name: Multiple Tests
+
+on:
+  pull_request:
+    paths:
+      - 'td_dynamic/karun/multiple/simulate_multiple.py'
+      - 'td_dynamic/karun/multiple/estimate_multiple.py'
+      - 'td_dynamic/karun/multiple/predictor_multiple.py'
+      - 'reference/karun/pytest_simulate_multiple.py'
+      - 'reference/karun/pytest_estimate_multiple_semi_gradient.py'
+      - 'reference/karun/pytest_estimate_multiple_avi.py'
+      - 'reference/karun/pytest_estimate_multiple_objective.py'
+      - 'pyproject.toml'
+      - 'poetry.lock'
+      - '.github/workflows/pytest.yml'
+
+# Add these permissions
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  test-simulate:
+    if: contains(github.event.pull_request.changed_files, 'td_dynamic/karun/multiple/simulate_multiple.py')
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.12']
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Configure AWS Credentials
+      run: |
+        mkdir -p ~/.aws
+        echo "[default]
+        aws_access_key_id=${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        region=${{ secrets.AWS_REGION }}
+
+        [football-markov]
+        aws_access_key_id=${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        region=${{ secrets.AWS_REGION }}" > ~/.aws/credentials
+        
+        echo "[default]
+        region=${{ secrets.AWS_REGION }}
+
+        [profile football-markov]
+        region=${{ secrets.AWS_REGION }}" > ~/.aws/config
+        
+        chmod 600 ~/.aws/credentials
+        chmod 600 ~/.aws/config
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        
+    - name: Add Poetry to PATH
+      run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+        
+    - name: Load cached Poetry dependencies
+      id: cached-poetry-dependencies
+      uses: actions/cache@v3
+      with:
+        path: .venv
+        key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+        
+    - name: Install dependencies
+      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      run: poetry install --no-interaction
+        
+    - name: Run simulate tests
+      run: |
+        poetry run pytest reference/karun/pytest_simulate_multiple.py -v
+
+    - name: Report test results
+      if: always()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const output = `
+          #### Simulate Multiple Test Results 📝
+          - Status: ${process.env.TEST_OUTCOME}
+          - OS: ${{ runner.os }}
+          - Python: ${{ matrix.python-version }}
+          `;
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+          })
+      env:
+        TEST_OUTCOME: ${{ job.status }}
+
+  test-estimate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.12']
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Configure AWS Credentials
+      run: |
+        mkdir -p ~/.aws
+        echo "[default]
+        aws_access_key_id=${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        region=${{ secrets.AWS_REGION }}
+
+        [football-markov]
+        aws_access_key_id=${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        region=${{ secrets.AWS_REGION }}" > ~/.aws/credentials
+        
+        echo "[default]
+        region=${{ secrets.AWS_REGION }}
+
+        [profile football-markov]
+        region=${{ secrets.AWS_REGION }}" > ~/.aws/config
+        
+        chmod 600 ~/.aws/credentials
+        chmod 600 ~/.aws/config
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        
+    - name: Add Poetry to PATH
+      run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+        
+    - name: Load cached Poetry dependencies
+      id: cached-poetry-dependencies
+      uses: actions/cache@v3
+      with:
+        path: .venv
+        key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+        
+    - name: Install dependencies
+      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      run: poetry install --no-interaction
+        
+    - name: Run estimate tests
+      run: |
+        poetry run pytest reference/karun/pytest_estimate_multiple_semi_gradient.py -v
+        poetry run pytest reference/karun/pytest_estimate_multiple_objective.py -v
+
+    - name: Report test results
+      if: always()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const output = `
+          #### Estimate Multiple Test Results 📝
+          - Status: ${process.env.TEST_OUTCOME}
+          - OS: ${{ runner.os }}
+          - Python: ${{ matrix.python-version }}
+          `;
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+          })
+      env:
+        TEST_OUTCOME: ${{ job.status }}
+
+  test-predictor:
+    if: contains(github.event.pull_request.changed_files, 'td_dynamic/karun/multiple/predictor_multiple.py')
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.12']
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Configure AWS Credentials
+      run: |
+        mkdir -p ~/.aws
+        echo "[default]
+        aws_access_key_id=${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        region=${{ secrets.AWS_REGION }}
+
+        [football-markov]
+        aws_access_key_id=${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        region=${{ secrets.AWS_REGION }}" > ~/.aws/credentials
+        
+        echo "[default]
+        region=${{ secrets.AWS_REGION }}
+
+        [profile football-markov]
+        region=${{ secrets.AWS_REGION }}" > ~/.aws/config
+        
+        chmod 600 ~/.aws/credentials
+        chmod 600 ~/.aws/config
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        
+    - name: Add Poetry to PATH
+      run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+        
+    - name: Load cached Poetry dependencies
+      id: cached-poetry-dependencies
+      uses: actions/cache@v3
+      with:
+        path: .venv
+        key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+        
+    - name: Install dependencies
+      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      run: poetry install --no-interaction
+        
+    - name: Run predictor tests
+      run: |
+        poetry run pytest reference/karun/pytest_estimate_multiple_avi.py -v
+        poetry run pytest reference/karun/pytest_estimate_multiple_objective.py -v
+
+    - name: Report test results
+      if: always()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const output = `
+          #### Predictor Multiple Test Results 📝
+          - Status: ${process.env.TEST_OUTCOME}
+          - OS: ${{ runner.os }}
+          - Python: ${{ matrix.python-version }}
+          `;
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+          })
+      env:
+        TEST_OUTCOME: ${{ job.status }}
