@@ -1,6 +1,7 @@
 # Temporal-Difference Dynamic Game Estimation
 
 - This is a Python implementation of Eckardt and Karun (2024) "Temporal-Difference Estimation of Dynamic Discrete Choice Models" by Kohei Kawaguchi and Taiga Someya (Not an author of the paper).
+- The simulated model is only for illustration. The estimation works for the general discrete-choice dynamic game of both discrete and continuous state variables.
 
 ## Requirements
 
