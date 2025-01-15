@@ -11,7 +11,7 @@ from td_dynamic.karun.multiple.predictor_multiple import (
     OracleStateValue,
     CCPLogisticRegressionPredictor,
 )
-from td_dynamic.karun.utils import read_pickle_from_s3
+from td_dynamic.karun.utils import read_pickle_from_local
 from td_dynamic.karun.utils import br
 
 # set constants ----------------------------------------------------
@@ -19,12 +19,9 @@ from td_dynamic.karun.utils import br
 degree = 1
 predictor_type = "polynomial"
 
-prefix = "output/estimate_multiple_semi_gradient/"
-bucket_name = "football-markov"
-
 # load data -------------------------------------------------------
 
-equilibrium = read_pickle_from_s3(bucket=bucket_name, prefix="output/simulate_multiple/", file_name="equilibrium.pkl")
+equilibrium = read_pickle_from_local("output/simulate_multiple/equilibrium.pkl")
 
 # define estimator ------------------------------------------------
 

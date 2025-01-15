@@ -13,23 +13,19 @@ from td_dynamic.karun.multiple.predictor_multiple import (
     LinearRegressionPredictor,
     CCPLogisticRegressionPredictor,
 )
-from td_dynamic.karun.utils import read_pickle_from_s3
+from td_dynamic.karun.utils import read_pickle_from_local
 import torch
 from copy import deepcopy
 
 # set constants ----------------------------------------------------
 
-prefix = "output/estimate_multiple_avi/"
-bucket_name = "football-markov"
-
 predictor_type = "polynomial"
-degree = 2
-
+degree = 1
 num_iteration = 2
 
 # load data --------------------------------------------------------
 
-equilibrium = read_pickle_from_s3(bucket=bucket_name, prefix="output/simulate_multiple/", file_name="equilibrium.pkl")
+equilibrium = read_pickle_from_local("output/simulate_multiple/equilibrium.pkl")
 predictor_list = [
   LinearRegressionPredictor(equilibrium=equilibrium, predictor_type=predictor_type, degree=degree, i=i)
   for i in range(equilibrium.num["firm"])

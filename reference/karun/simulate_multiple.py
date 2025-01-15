@@ -2,18 +2,17 @@
 
 import numpy as np
 from td_dynamic.karun.multiple.simulate_multiple import EquilibriumMultipleEntryExit
-from td_dynamic.karun.utils import create_s3_folder_if_not_exists, write_pickle_to_s3
+from td_dynamic.karun.utils import ensure_dir, write_pickle_to_local
 import multiprocessing
 
 # set constants ----------------------------------------------------
 
-prefix = "output/simulate_multiple/"
-bucket_name = "football-markov"
+output_path = "output/simulate_multiple/equilibrium.pkl"
 
-create_s3_folder_if_not_exists(bucket=bucket_name, folder=prefix)
+# Ensure output directory exists
+ensure_dir(output_path)
 
 num = {"market": 1000, "firm": 3, "period": 100, "state": 1, "action": 2, "tolerance": 1e-6}
-
 num["grid_size"] = np.full(num["state"], 5)
 
 # set parameters ----------------------------------------------------
@@ -34,7 +33,7 @@ discount = 0.95
 def main():
     model = EquilibriumMultipleEntryExit(discount=discount, num=num, param=param)
     model.simulate_equilibrium()
-    write_pickle_to_s3(obj=model, bucket=bucket_name, prefix=prefix, file_name="equilibrium.pkl")
+    write_pickle_to_local(obj=model, file_path=output_path)
 
 if __name__ == '__main__':
     # This is required for Windows multiprocessing

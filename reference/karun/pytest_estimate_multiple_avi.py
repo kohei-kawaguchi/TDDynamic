@@ -9,18 +9,17 @@ from td_dynamic.karun.multiple.predictor_multiple import (
     LinearRegressionPredictor,
     CCPLogisticRegressionPredictor,
 )
-from td_dynamic.karun.utils import read_pickle_from_s3
+from td_dynamic.karun.utils import read_pickle_from_local
 
 @pytest.fixture
 def setup_data():
-    bucket_name = "football-markov"
-    equilibrium = read_pickle_from_s3(bucket=bucket_name, prefix="output/simulate_multiple/", file_name="equilibrium.pkl")
+    equilibrium = read_pickle_from_local("output/simulate_multiple/equilibrium.pkl")
     
     # predictor_list = [
     #     MLPPredictor(
     #         equilibrium=equilibrium,
     #         predictor_type="oracle",
-    #         degree=2,
+    #         degree=1,
     #         hidden_layer_sizes=(16,),
     #         learning_rate=0.001,
     #         batch_size=256,
@@ -41,20 +40,22 @@ def setup_data():
     ]   
     avi_estimator = EstimatorForEquilibriumMultipleAVI(equilibrium=equilibrium, predictor_list=predictor_list, ccp_predictor_list=ccp_predictor_list)
     
+    semi_gradient_estimator = EstimatorForEquilibriumMultipleSemiGradient(equilibrium=equilibrium, ccp_predictor_list=ccp_predictor_list)
+    
     oracle_predictor_list = [
         LinearRegressionPredictor(equilibrium=equilibrium, predictor_type="oracle", degree=0, i=i)
         for i in range(equilibrium.num["firm"])
     ]
-    
-    oracle_avi_estimator = EstimatorForEquilibriumMultipleAVI(equilibrium=equilibrium, predictor_list=oracle_predictor_list, ccp_predictor_list=ccp_predictor_list)
-    
-    semi_gradient_estimator = EstimatorForEquilibriumMultipleSemiGradient(equilibrium=equilibrium, ccp_predictor_list=ccp_predictor_list)
+    oracle_ccp_predictor_list = [
+        CCPLogisticRegressionPredictor(equilibrium=equilibrium, ccp_predictor_type="oracle", degree=0)
+        for i in range(equilibrium.num["firm"])
+    ]
+    oracle_avi_estimator = EstimatorForEquilibriumMultipleAVI(equilibrium=equilibrium, predictor_list=oracle_predictor_list, ccp_predictor_list=oracle_ccp_predictor_list)
     
     return {
-        'equilibrium': equilibrium,
         'avi_estimator': avi_estimator,
-        'oracle_avi_estimator': oracle_avi_estimator,
-        'semi_gradient_estimator': semi_gradient_estimator
+        'semi_gradient_estimator': semi_gradient_estimator,
+        'oracle_avi_estimator': oracle_avi_estimator
     }
 
 # Tests for h estimation
@@ -62,7 +63,7 @@ def test_initialize_h_predictor(setup_data):
     avi_estimator = setup_data['avi_estimator']
     semi_gradient_estimator = setup_data['semi_gradient_estimator']
     
-    initial_h, _, _ = semi_gradient_estimator.estimate_h(predictor_type="polynomial", degree=2)
+    initial_h, _, _ = semi_gradient_estimator.estimate_h(predictor_type="polynomial", degree=1)
     predictor_list_h = avi_estimator.initialize_h_predictor(initial_h=initial_h)
     
     assert len(predictor_list_h) == len(initial_h)
@@ -71,10 +72,12 @@ def test_initialize_h_predictor(setup_data):
 
 def test_update_h_predictor(setup_data):
     avi_estimator = setup_data['avi_estimator']
-    equilibrium = setup_data['equilibrium']
     semi_gradient_estimator = setup_data['semi_gradient_estimator']
     
-    initial_h, _, _ = semi_gradient_estimator.estimate_h(predictor_type="polynomial", degree=2)
+    # Get equilibrium from estimator
+    equilibrium = avi_estimator.equilibrium
+    
+    initial_h, _, _ = semi_gradient_estimator.estimate_h(predictor_type="oracle", degree=0)
     
     action_state = equilibrium.result.select(
         *[col for col in equilibrium.result.columns if col.startswith("action_value_")],
@@ -104,7 +107,7 @@ def test_estimate_h(setup_data):
     avi_estimator = setup_data['avi_estimator']
     semi_gradient_estimator = setup_data['semi_gradient_estimator']
     
-    initial_h, _, _ = semi_gradient_estimator.estimate_h(predictor_type="polynomial", degree=2)
+    initial_h, _, _ = semi_gradient_estimator.estimate_h(predictor_type="polynomial", degree=1)
     h, h_predictor_list = avi_estimator.estimate_h(initial_h=initial_h, num_iteration=2)
     
     assert len(h) == len(initial_h)
@@ -117,7 +120,7 @@ def test_initialize_g_predictor(setup_data):
     avi_estimator = setup_data['avi_estimator']
     semi_gradient_estimator = setup_data['semi_gradient_estimator']
     
-    initial_g, _, _ = semi_gradient_estimator.estimate_g(predictor_type="polynomial", degree=2)
+    initial_g, _, _ = semi_gradient_estimator.estimate_g(predictor_type="polynomial", degree=1)
     predictor_list_g = avi_estimator.initialize_g_predictor(initial_g=initial_g)
     
     assert len(predictor_list_g) == len(initial_g)
@@ -126,10 +129,12 @@ def test_initialize_g_predictor(setup_data):
 
 def test_update_g_predictor(setup_data):
     avi_estimator = setup_data['avi_estimator']
-    equilibrium = setup_data['equilibrium']
     semi_gradient_estimator = setup_data['semi_gradient_estimator']
     
-    initial_g, _, _ = semi_gradient_estimator.estimate_g(predictor_type="polynomial", degree=2)
+    # Get equilibrium from estimator
+    equilibrium = avi_estimator.equilibrium
+    
+    initial_g, _, _ = semi_gradient_estimator.estimate_g(predictor_type="oracle", degree=0)
     
     action_state = equilibrium.result.select(
         *[col for col in equilibrium.result.columns if col.startswith("action_value_")],
@@ -157,7 +162,7 @@ def test_estimate_g(setup_data):
     avi_estimator = setup_data['avi_estimator']
     semi_gradient_estimator = setup_data['semi_gradient_estimator']
     
-    initial_g, _, _ = semi_gradient_estimator.estimate_g(predictor_type="polynomial", degree=2)
+    initial_g, _, _ = semi_gradient_estimator.estimate_g(predictor_type="polynomial", degree=1)
     g, g_predictor_list = avi_estimator.estimate_g(initial_g=initial_g, num_iteration=2)
     
     assert len(g) == len(initial_g)

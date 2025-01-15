@@ -5,13 +5,12 @@ from td_dynamic.karun.multiple.estimate_multiple import (
     EstimatorForEquilibriumMultipleSemiGradient,
     EstimatorForEquilibriumMultiple,
 )
-from td_dynamic.karun.utils import read_pickle_from_s3
+from td_dynamic.karun.utils import read_pickle_from_local
 from td_dynamic.karun.multiple.predictor_multiple import CCPLogisticRegressionPredictor
 
 @pytest.fixture
 def setup_data():
-    bucket_name = "football-markov"
-    equilibrium = read_pickle_from_s3(bucket=bucket_name, prefix="output/simulate_multiple/", file_name="equilibrium.pkl")
+    equilibrium = read_pickle_from_local("output/simulate_multiple/equilibrium.pkl")
     ccp_predictor_list = [
         CCPLogisticRegressionPredictor(equilibrium=equilibrium, ccp_predictor_type="oracle", degree=0)
         for i in range(equilibrium.num["firm"])

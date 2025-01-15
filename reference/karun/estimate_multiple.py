@@ -8,7 +8,7 @@ from td_dynamic.karun.multiple.predictor_multiple import (
   LinearRegressionPredictor,
   CCPLogisticRegressionPredictor
 )
-from td_dynamic.karun.utils import read_pickle_from_s3, write_pickle_to_s3
+from td_dynamic.karun.utils import read_pickle_from_local
 
 # set constants ----------------------------------------------------
 
@@ -16,12 +16,9 @@ degree = 0
 predictor_type = "oracle"
 num_iteration = 1
 
-prefix = "output/estimate_multiple/"
-bucket_name = "football-markov"
-
 # load data --------------------------------------------------------
 
-equilibrium = read_pickle_from_s3(bucket=bucket_name, prefix="output/simulate_multiple/", file_name="equilibrium.pkl")
+equilibrium = read_pickle_from_local("output/simulate_multiple/equilibrium.pkl")
 
 # estimate by semi-gradient ----------------------------------------
 ccp_predictor_list = [

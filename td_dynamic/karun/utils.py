@@ -49,36 +49,36 @@ def create_s3_folder_if_not_exists(bucket, folder):
         print(f"Folder s3://{bucket}/{folder} already exists")
 
 
-def write_pickle_to_s3(obj, bucket, prefix, file_name):
+def ensure_dir(file_path):
+    """Create directory if it doesn't exist"""
+    directory = os.path.dirname(file_path)
+    if directory and not os.path.exists(directory):
+        os.makedirs(directory)
+
+
+def write_pickle_to_local(obj, file_path):
+    """Write pickle file to local directory"""
+    ensure_dir(file_path)
+    with open(file_path, 'wb') as f:
+        pickle.dump(obj, f)
+
+
+def read_pickle_from_local(file_path):
+    """Read pickle file from local directory"""
     try:
-        # Pickle the object
-        pickled_data = pickle.dumps(obj)
+        with open(file_path, 'rb') as f:
+            obj = pickle.load(f)
+            
+            # Verify data consistency after loading
+            if hasattr(obj, 'result') and isinstance(obj.result, pl.DataFrame):
+                print(f"Loaded result shape: {obj.result.shape}")
+            
+            return obj
+    except FileNotFoundError:
+        raise FileNotFoundError(f"File not found: {file_path}")
+    except Exception as e:
+        raise Exception(f"Error loading pickle file: {e}")
 
-        # Form the full key
-        key = f"{prefix}{file_name}"
-
-        # Upload the pickled object to S3
-        s3.put_object(Bucket=bucket, Key=key, Body=pickled_data)
-        print(f"Successfully uploaded pickled object to s3://{bucket}/{key}")
-    except NoCredentialsError:
-        print("Credentials not available")
-
-
-def read_pickle_from_s3(bucket, prefix, file_name):
-    try:
-        # Form the full key
-        key = f"{prefix}{file_name}"
-
-        # Download the pickled object from S3
-        response = s3.get_object(Bucket=bucket, Key=key)
-        pickled_data = response["Body"].read()
-
-        # Unpickle the object
-        obj = pickle.loads(pickled_data)
-        print(f"Successfully read pickled object from s3://{bucket}/{key}")
-        return obj
-    except NoCredentialsError:
-        print("Credentials not available")
 
 def br(data) -> None:
     """
