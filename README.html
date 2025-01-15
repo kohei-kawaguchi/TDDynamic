@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.5.45">
+<meta name="generator" content="quarto-1.5.43">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -109,8 +109,11 @@ window.Quarto = {
 
 
 
-<section id="football-markov" class="level1">
-<h1>Football Markov</h1>
+<section id="temporal-difference-dynamic-game-estimation" class="level1">
+<h1>Temporal-Difference Dynamic Game Estimation</h1>
+<ul>
+<li>This is a Python implementation of Eckardt and Karun (2024) “Temporal-Difference Estimation of Dynamic Discrete Choice Models” by Kohei Kawaguchi (Not an author of the paper).</li>
+</ul>
 <section id="requirements" class="level2">
 <h2 class="anchored" data-anchor-id="requirements">Requirements</h2>
 <ul>
@@ -123,101 +126,29 @@ window.Quarto = {
 <div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">poetry</span> install</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
 </section>
-<section id="singe-agent-model" class="level1">
-<h1>Singe-agent model</h1>
-<section id="model" class="level2">
-<h2 class="anchored" data-anchor-id="model">Model</h2>
-<p>The state variable is <span class="math inline">\(z_{it}\)</span> following an AR(1) process <span class="math display">\[
-z_{it} = \mu (1 - \alpha) + \alpha z_{i,t-1} + \nu_{it}.
-\]</span></p>
-<p>The payoff of firm <span class="math inline">\(i\)</span> in time <span class="math inline">\(t\)</span> <span class="math display">\[
-\pi_{it} = \beta z_{it} a_{it} - \lambda (1 - a_{i, t-1}) a_{it} + \sum_{a = 0}^1 1\{a_{it} = a\}\epsilon_{a it} = \pi(a_{it}, a_{i, t-1}, z_{it}) + \sum_{a = 0}^1 1\{a_{it} = a\}\epsilon_{a it},
-\]</span> and <span class="math inline">\(\epsilon_{it}\)</span> follows an i.i.d. type-I extreme value distribution.</p>
-<p>The action <span class="math inline">\(a_{it}\)</span> takes either a value of 0 (inactive) or 1 (active).</p>
-<p>We discretize <span class="math inline">\(z_{it}\)</span> into <span class="math inline">\(G\)</span> grid points according to Tauchen (1986).</p>
-<p>The state variable of firm <span class="math inline">\(i\)</span> in time <span class="math inline">\(t\)</span> is <span class="math display">\[
-s_{it} = (a_{i, t - 1}, z_{it})',
-\]</span> and there are <span class="math inline">\(L = G \times 2\)</span> points: <span class="math display">\[
-\begin{pmatrix}
-0 &amp; z_1 \\
-1 &amp; z_1 \\
-\vdots &amp; \vdots \\
-0 &amp; z_G \\
-1 &amp; z_G
-\end{pmatrix}.
-\]</span></p>
-<p>The payoff matrix is <span class="math display">\[
-\Pi =
-\begin{pmatrix}
-\pi(0, 0, z_1) \\
-\pi(1, 0, z_1) \\
-\pi(0, 1, z_1) \\
-\pi(1, 1, z_1) \\
-\vdots \\
-\pi(0, 0, z_G) \\
-\pi(1, 0, z_G) \\
-\pi(0, 1, z_G) \\
-\pi(1, 1, z_G) \\
-\end{pmatrix},
-\]</span> and the transition matrix is <span class="math display">\[
-G =
-\begin{pmatrix}
-g(0, 0, z_1, 0, z_1) &amp; g(0, 0, z_1, 1, z_1) &amp; \dots &amp; (0, 0, z_1, 0, z_G) &amp; g(0, 0, z_1, 1, z_G)\\
-g(1, 0, z_1, 0, z_1) &amp; g(1, 0, z_1, 1, z_1) &amp; \dots &amp; g(1, 0, z_1, 0, z_G) &amp; g(1, 0, z_1, 1, z_G)\\
-g(0, 1, z_1, 0, z_1) &amp; g(0, 1, z_1, 1, z_1) &amp; \dots &amp; g(0, 1, z_1, 0, z_G) &amp; g(0, 1, z_1, 1, z_G)\\
-g(1, 1, z_1, 0, z_1) &amp; g(1, 1, z_1, 1, z_1) &amp; \dots &amp; g(1, 1, z_1, 0, z_G) &amp; g(1, 1, z_1, 1, z_G)\\
-\vdots &amp; &amp; &amp; &amp; \\
-g(0, 0, z_G, 0, z_1) &amp; g(0, 0, z_G, 1, z_1) &amp; \dots &amp; g(0, 0, z_G, 0, z_G) &amp; g(0, 0, z_G, 1, z_G)\\
-g(1, 0, z_G, 0, z_1) &amp; g(1, 0, z_G, 1, z_1) &amp; \dots &amp; g(1, 0, z_G, 0, z_G) &amp; g(1, 0, z_G, 1, z_G)\\
-g(0, 1, z_G, 0, z_1) &amp; g(0, 1, z_G, 1, z_1) &amp; \dots &amp; g(0, 1, z_G, 0, z_G) &amp; g(0, 1, z_G, 1, z_G)\\
-g(1, 1, z_G, 0, z_1) &amp; g(1, 1, z_G, 1, z_1) &amp; \dots &amp; g(1, 1, z_G, 0, z_G) &amp; g(1, 1, z_G, 1, z_G)\\
-\end{pmatrix}.
-\]</span></p>
-</section>
-<section id="main-files" class="level2">
-<h2 class="anchored" data-anchor-id="main-files">Main files</h2>
-<ul>
-<li><code>reference/karun/simulate_single.py</code>: solve the model and simulate the data from the solution</li>
-<li><code>reference/karun/estimate_single.py</code>: estimate the parameter using the simulated data</li>
-</ul>
-</section>
-<section id="function-definitions" class="level2">
-<h2 class="anchored" data-anchor-id="function-definitions">Function definitions</h2>
-<ul>
-<li><code>td_dynamic/karun/utility.py</code>: utility functions</li>
-<li><code>td_dynamic/karun/simulate_single.py</code>: functions to simulate the data from the solution</li>
-<li><code>td_dynamic/karun/estimate_single_semi_gradient.py</code>: functions to estimate h and g using semi-gradient method</li>
-<li><code>td_dynamic/karun/estimate_single_avi.py</code>: functions to estimate h and g using approximate value iteration method</li>
-<li><code>td_dynamic/karun/estimate_single_objective.py</code>: functions to evaluate the log-likelihood and estimate parameters by maximizing the log-likelihood</li>
-</ul>
-</section>
-<section id="test-files" class="level2">
-<h2 class="anchored" data-anchor-id="test-files">Test files</h2>
-<ul>
-<li><code>reference/karun/test_simulate_single.py</code>: test functions in <code>simulate_single.py</code></li>
-<li><code>reference/karun/test_estimate_single_semi_gradient.py</code>: test functions in <code>estimate_single_semi_gradient.py</code></li>
-<li><code>reference/karun/test_estimate_single_avi.py</code>: test functions in <code>estimate_single_avi.py</code></li>
-<li><code>reference/karun/test_estimate_single_objective.py</code>: test functions in <code>estimate_single_objective.py</code></li>
-</ul>
-</section>
-</section>
 <section id="multiple-agent-model" class="level1">
 <h1>Multiple-agent model</h1>
-<section id="model-1" class="level2">
-<h2 class="anchored" data-anchor-id="model-1">Model</h2>
+<section id="model" class="level2">
+<h2 class="anchored" data-anchor-id="model">Model</h2>
 <p>There are <span class="math inline">\(N\)</span> potential firms in a market.</p>
-<p>The state variable of the market is <span class="math inline">\(z_{t}\)</span> following an AR(1) process <span class="math display">\[
-z_{t} = \mu (1 - \alpha) + \alpha z_{t-1} + \nu_{t}.
+<p>The state variable of the market is <span class="math inline">\(z_{t}\)</span> following an AR(1) process:</p>
+<p><span class="math display">\[
+z_{t} = \mu (1 - \alpha) + \alpha z_{t-1} + \nu_{t}
 \]</span></p>
-<p>The payoff of firm <span class="math inline">\(i\)</span> in time <span class="math inline">\(t\)</span> <span class="math display">\[
-\pi_{it} = \beta z_{t} a_{it} - \alpha \sum_{j = 1}^N a_{jt} - \lambda (1 - a_{i, t-1}) a_{it} + \sum_{a = 0}^1 1\{a_{it} = a\}\epsilon_{a it} = \pi_i(a_t, a_{t - 1}, z_t) + \sum_{a = 0}^1 1\{a_{it} = a\}\epsilon_{a it},
-\]</span> and <span class="math inline">\(\epsilon_{it}\)</span> follows an i.i.d. type-I extreme value distribution.</p>
+<p>The payoff of firm <span class="math inline">\(i\)</span> in time <span class="math inline">\(t\)</span>:</p>
+<p><span class="math display">\[
+\pi_{it} = \beta z_{t} a_{it} - \alpha \sum_{j = 1}^N a_{jt} - \lambda (1 - a_{i, t-1}) a_{it} + \sum_{a = 0}^1 1\{a_{it} = a\}\epsilon_{a it} = \pi_i(a_t, a_{t - 1}, z_t) + \sum_{a = 0}^1 1\{a_{it} = a\}\epsilon_{a it}
+\]</span></p>
+<p>where <span class="math inline">\(\epsilon_{it}\)</span> follows an i.i.d. type-I extreme value distribution.</p>
 <p>The action <span class="math inline">\(a_{it}\)</span> takes either a value of 0 (inactive) or 1 (active).</p>
 <p>Therefore, the number of action profiles is <span class="math inline">\(m_a = 2^N\)</span>.</p>
 <p>We discretize <span class="math inline">\(z_{t}\)</span> into <span class="math inline">\(G\)</span> grid points according to Tauchen (1986).</p>
-<p>The state variable of firm <span class="math inline">\(i\)</span> in time <span class="math inline">\(t\)</span> is <span class="math display">\[
-s_{it} = (a_{t - 1}, z_{t})',
-\]</span> and there are <span class="math inline">\(L = G \times m_a\)</span> points: <span class="math display">\[
+<p>The state variable of firm <span class="math inline">\(i\)</span> in time <span class="math inline">\(t\)</span> is:</p>
+<p><span class="math display">\[
+s_{it} = (a_{t - 1}, z_{t})'
+\]</span></p>
+<p>and there are <span class="math inline">\(L = G \times m_a\)</span> points:</p>
+<p><span class="math display">\[
 \begin{pmatrix}
 0 &amp; z_1 \\
 \vdots &amp; \vdots \\
@@ -226,9 +157,10 @@ m_a &amp; z_1 \\
 0 &amp; z_G \\
 \vdots &amp; \vdots \\
 m_a &amp; z_G
-\end{pmatrix}.
+\end{pmatrix}
 \]</span></p>
-<p>The payoff matrix is <span class="math display">\[
+<p>The payoff matrix is:</p>
+<p><span class="math display">\[
 \begin{split}
 \Pi_i &amp;=
 \begin{pmatrix}
@@ -246,11 +178,8 @@ m_a &amp; z_G
 \vdots \\
 \pi_i(0, m_a, z_G) \\
 \vdots \\
-\pi_i(m_a, m_a, z_G) \\
-\vdots \\
-\vdots \\
-\pi_i(m_a, m_a, z_G) \\
-\end{pmatrix}\\
+\pi_i(m_a, m_a, z_G)
+\end{pmatrix} \\
 &amp;=
 \begin{pmatrix}
 \Pi_i(0, z_1) \\
@@ -259,16 +188,18 @@ m_a &amp; z_G
 \vdots \\
 \Pi_i(0, z_G) \\
 \vdots \\
-\Pi_i(m_a, z_G) \\
-\end{pmatrix}\\
+\Pi_i(m_a, z_G)
+\end{pmatrix} \\
 &amp;=
 \begin{pmatrix}
 \Pi_i(z_1) \\
 \vdots \\
 \Pi_i(z_G)
-\end{pmatrix}.
+\end{pmatrix}
 \end{split}
-\]</span> and the transition matrix is <span class="math display">\[
+\]</span></p>
+<p>and the transition matrix is:</p>
+<p><span class="math display">\[
 \begin{split}
 G &amp;=
 \begin{pmatrix}
@@ -300,28 +231,22 @@ G(m_a, z_G, 0, z_1) &amp; \dots &amp; G(m_a, z_G, m_a, z_1) &amp; \dots &amp; G(
 \end{pmatrix}\\
 &amp;=
 \begin{pmatrix}
-G(z_1, 0, z_1) &amp; \dots &amp; G(z_1, m_a, z_1) &amp; \dots &amp; G(z_1, 0, z_G) &amp; \dots &amp; G(z_1, m_a, z_G)\\
-\vdots &amp; \vdots &amp; \vdots &amp; \vdots &amp; \vdots &amp; \vdots &amp; \vdots \\
-G(z_G, 0, z_1) &amp; \dots &amp; G(z_G, m_a, z_1) &amp; \dots &amp; G(z_G, 0, z_G) &amp; \dots &amp; G(z_G, m_a, z_G)\\
-\end{pmatrix}\\
-&amp;=
-\begin{pmatrix}
 G(z_1) \\
 \vdots \\
 G(z_G)
-\end{pmatrix}.
+\end{pmatrix}
 \end{split}
 \]</span></p>
 </section>
-<section id="main-files-1" class="level2">
-<h2 class="anchored" data-anchor-id="main-files-1">Main files</h2>
+<section id="main-files" class="level2">
+<h2 class="anchored" data-anchor-id="main-files">Main files</h2>
 <ul>
 <li><code>reference/karun/simulate_multiple.py</code>: solve the model and simulate the data from the solution</li>
 <li><code>reference/karun/estimate_multiple.py</code>: estimate the parameter using the simulated data</li>
 </ul>
 </section>
-<section id="function-definitions-1" class="level2">
-<h2 class="anchored" data-anchor-id="function-definitions-1">Function definitions</h2>
+<section id="function-definitions" class="level2">
+<h2 class="anchored" data-anchor-id="function-definitions">Function definitions</h2>
 <ul>
 <li><code>td_dynamic/karun/utility.py</code>: utility functions</li>
 <li><code>td_dynamic/karun/simulate_multiple.py</code>: functions to simulate the data from the solution</li>
@@ -333,6 +258,7 @@ G(z_G)
 <section id="manualy-test-files" class="level2">
 <h2 class="anchored" data-anchor-id="manualy-test-files">Manualy test files</h2>
 <ul>
+<li>First run <code>reference/karun/simulate_multiple.py</code> to generate the data</li>
 <li><code>reference/karun/test_simulate_multiple.py</code>: test functions in <code>simulate_multiple.py</code></li>
 <li><code>reference/karun/test_estimate_multiple_semi_gradient.py</code>: test functions in <code>estimate_multiple_semi_gradient.py</code></li>
 <li><code>reference/karun/test_estimate_multiple_avi.py</code>: test functions in <code>estimate_multiple_avi.py</code></li>
@@ -342,6 +268,7 @@ G(z_G)
 <section id="pytest-files" class="level2">
 <h2 class="anchored" data-anchor-id="pytest-files">Pytest files</h2>
 <ul>
+<li>First run <code>reference/karun/simulate_multiple.py</code> to generate the data</li>
 <li><code>reference/karun/pytest_simulate_multiple.py</code>: Pytest functions in <code>simulate_multiple.py</code></li>
 <li><code>reference/karun/pytest_estimate_multiple_semi_gradient.py</code>: Pytest functions in <code>estimate_multiple_semi_gradient.py</code></li>
 <li><code>reference/karun/pytest_estimate_multiple_avi.py</code>: Pytest functions in <code>estimate_multiple_avi.py</code></li>
